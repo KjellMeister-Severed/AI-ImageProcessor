@@ -1,101 +1,48 @@
-let objectDetector;
-let status;
-let objects = [];
-let video;
-let canvas, ctx;
-const width = 480;
-const height = 360;
-let missCounter = 5
+let detector;
+let client;
 
-window.addEventListener('DOMContentLoaded', init)
-
-async function init() {
-    video = await getVideo();
-    objectDetector = await ml5.objectDetector('cocossd', startDetecting)
-    canvas = createCanvas(width, height);
-    ctx = canvas.getContext('2d');
+const options = {
+    clientId: "MQTT-AI-COMP-4545615",
+    protocolId: 'MQTT',
+    useSSL: true,
+    username: "EdgeGroep-ai",
+    password: "EdgeGroep6",
 }
 
+document.addEventListener("DOMContentLoaded", init)
 
-function startDetecting() {
-    console.log('model ready')
-    detect();
-}
-
-function detect() {
-    objectDetector.detect(video, function (err, results) {
-        if (err) {
-            return
-        }
-
-        objects = results
-
-        if (results) {
-            draw();
-
-        }
-
-        detect();
+function init() {
+    detector = ml5.objectDetector('cocossd', () => {
+         client  = mqtt.connect('wss://ffca62ab118149a9b9e2b927e3b7712d.s1.eu.hivemq.cloud:8884/mqtt', options)
+         client.on('connect', function () {
+             console.log('Connected')
+         })
+         client.on('message', function (topic, message) {
+            findCar(message, () => {
+                client.publish("/gate/toggle", "")
+            }).then()
+         });
+        client.subscribe("/image")
     });
 }
 
-function draw() {
-    // Clear part of the canvas
-
-    ctx.fillStyle = "#000000"
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.drawImage(video, 0, 0);
-    for (let i = 0; i < objects.length; i += 1) {
-
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "green";
-        ctx.fillText(objects[i].label, objects[i].x + 4, objects[i].y + 16);
-
-        ctx.beginPath();
-        ctx.rect(objects[i].x, objects[i].y, objects[i].width, objects[i].height);
-        ctx.strokeStyle = "green";
-        ctx.stroke();
-        ctx.closePath();
+function gotDetections(error, results) {
+    if (error) {
+        console.error(error);
     }
-    detectCar(objects)
-}
-
-
-async function getVideo() {
-
-    const videoElement = document.createElement('video');
-    videoElement.setAttribute("style", "display: none;");
-    videoElement.width = width;
-    videoElement.height = height;
-    document.body.appendChild(videoElement);
-
-    const capture = await navigator.mediaDevices.getUserMedia({video: true})
-    videoElement.srcObject = capture;
-    videoElement.play();
-
-    return videoElement
-}
-
-function createCanvas(w, h) {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    document.querySelector('.videoFeed').appendChild(canvas);
-    return canvas;
-}
-
-function detectCar(object) {
-    let classList = document.querySelector(".carDetected").classList
-    console.log(classList)
-    object.forEach((object) => {
-        if (object.label === "car") {
-            classList.replace('red', 'green')
-            missCounter = 5
-        }
-    })
-    if(missCounter <= 0 ){
-        classList.replace('green', 'red')
+    console.log(results)
+    if(results.map(item => item.label).includes("car")){
+        client.publish("/gate/toggle", "")
     }
-    missCounter -= 1
+}
+
+async function createImage (base){
+    let image = new Image();
+    image.src = `data:image/jpg;base64,${base}`;
+    return image;
+}
+
+async function findCar(image) {
+    let img = await createImage(image)
+    detector.detect(img, gotDetections);
 }
