@@ -1,0 +1,42 @@
+h1 {
+    font-family: 'Montserrat', sans-serif;
+    background-color: 	#EA580C;
+    height: 5rem;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    color: aliceblue;
+}
+
+body {
+    background-color: #092575;
+}
+
+.videoFeed{
+    margin: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.carDetected{
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: aliceblue;
+    margin-left: 15rem;
+    margin-right: 15rem;
+    padding: 2rem;
+    border-radius: 4rem;
+}
+
+.red{
+    background-color: red;
+}
+
+.green{
+    background-color: green;
+}
